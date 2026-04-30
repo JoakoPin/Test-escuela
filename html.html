@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS Function Lab</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #64748b;
+            --bg: #f8fafc;
+            --card: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: #1e293b;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        .card h3 {
+            margin-top: 0;
+            border-bottom: 2px solid var(--bg);
+            padding-bottom: 10px;
+        }
+
+        input,
+        button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background-color: #1d4ed8;
+        }
+
+        .result {
+            background: #f1f5f9;
+            padding: 10px;
+            border-radius: 4px;
+            min-height: 20px;
+            font-family: monospace;
+            word-break: break-all;
+        }
+
+        #colorBox {
+            height: 50px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border: 2px dashed #cbd5e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Laboratorio de Funciones JS</h1>
+
+        <div class="grid">
+            <!-- 1. Calculadora de Factorial (Lógica Matemática) -->
+            <div class="card">
+                <h3>Recursión: Factorial</h3>
+                <p>Calcula el factorial de un número (n!).</p>
+                <input type="number" id="factInput" placeholder="Introduce un número">
+                <button onclick="runFactorial()">Calcular</button>
+                <div class="result" id="factResult">Resultado: -</div>
+            </div>
+
+            <!-- 2. Manipulación de Color (Eventos y Estilo) -->
+            <div class="card">
+                <h3>DOM: Cambiador de Color</h3>
+                <div id="colorBox">Mírame cambiar</div>
+                <button onclick="changeColor()">Generar Color Aleatorio</button>
+                <div class="result" id="colorCode">Hex: #FFFFFF</div>
+            </div>
+
+            <!-- 3. Contador con Intervalo (Temporizadores) -->
+            <div class="card">
+                <h3>Async: Cronómetro simple</h3>
+                <div class="result" id="timerDisplay" style="font-size: 1.5rem; text-align: center;">00:00</div>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="startTimer()">Iniciar</button>
+                    <button onclick="stopTimer()" style="background: #ef4444;">Detener</button>
+                </div>
+            </div>
+
+            <!-- 4. Filtro de Arreglos (Procesamiento de Datos) -->
+            <div class="card">
+                <h3>Arrays: Filtro de Palabras</h3>
+                <p>Escribe palabras separadas por comas.</p>
+                <input type="text" id="arrayInput" placeholder="sol, luna, estrella, mar">
+                <button onclick="filterLongWords()">Filtrar (> 5 letras)</button>
+                <div class="result" id="arrayResult">Resultado: []</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Lógica del Factorial ---
+        function factorial(n) {
+            if (n < 0) return "Error";
+            if (n === 0 || n === 1) return 1;
+            return n * factorial(n - 1);
+        }
+
+        function runFactorial() {
+            const val = document.getElementById('factInput').value;
+            const res = factorial(parseInt(val));
+            document.getElementById('factResult').innerText = `Resultado: ${res}`;
+        }
+
+        // --- 2. Lógica de Colores ---
+        function changeColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            const box = document.getElementById('colorBox');
+            box.style.backgroundColor = color;
+            box.style.color = 'white';
+            document.getElementById('colorCode').innerText = `Hex: ${color}`;
+        }
+
+        // --- 3. Lógica del Cronómetro ---
+        let timerInterval;
+        let seconds = 0;
+
+        function startTimer() {
+            if (timerInterval) return; // Evitar múltiples intervalos
+            timerInterval = setInterval(() => {
+                seconds++;
+                const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+                const secs = (seconds % 60).toString().padStart(2, '0');
+                document.getElementById('timerDisplay').innerText = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+
+        // --- 4. Lógica de Arreglos ---
+        function filterLongWords() {
+            const input = document.getElementById('arrayInput').value;
+            // Convertir string en array, limpiar espacios y filtrar
+            const words = input.split(',').map(w => w.trim());
+            const filtered = words.filter(word => word.length > 5);
+
+            document.getElementById('arrayResult').innerText =
+                filtered.length > 0 ? `Filtradas: [${filtered.join(', ')}]` : "No hay palabras largas.";
+        }
+    </script>
+
+</body>
+
+</html>
