@@ -1,202 +1,457 @@
+
 <!DOCTYPE html>
 <html lang="es">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JS Function Lab</title>
+    <title>Presentación Interactiva CPU</title>
+
     <style>
-        :root {
-            --primary: #2563eb;
-            --secondary: #64748b;
-            --bg: #f8fafc;
-            --card: #ffffff;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
         }
 
         body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background-color: var(--bg);
-            color: #1e293b;
-            line-height: 1.6;
-            margin: 0;
+            background: linear-gradient(135deg, #0f172a, #111827, #1e293b);
+            color: white;
+            overflow: hidden;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px;
+            border-bottom: 2px solid #38bdf8;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        header h1 {
+            color: #67e8f9;
+            font-size: 2.5rem;
+        }
+
+        .main {
+            display: flex;
+            height: calc(100vh - 110px);
+        }
+
+        .cpu-area {
+            flex: 2;
+            position: relative;
             padding: 20px;
         }
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
+        .info-area {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 2px solid rgba(255, 255, 255, 0.1);
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
         }
 
-        h1 {
+        .component {
+            position: absolute;
+            background: #1e293b;
+            border: 2px solid #38bdf8;
+            border-radius: 18px;
+            padding: 15px;
             text-align: center;
-            color: var(--primary);
+            transition: 0.5s;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);
         }
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
+        .active {
+            transform: scale(1.08);
+            background: #0284c7;
+            box-shadow: 0 0 30px #38bdf8;
+        }
+
+        .memory {
+            top: 90px;
+            left: 40px;
+            width: 180px;
+        }
+
+        .control {
+            top: 90px;
+            left: 320px;
+            width: 220px;
+        }
+
+        .alu {
+            top: 340px;
+            left: 320px;
+            width: 220px;
+        }
+
+        .registers {
+            top: 90px;
+            right: 40px;
+            width: 250px;
+        }
+
+        .register {
+            background: #0f172a;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #334155;
+        }
+
+        .register span {
+            color: #facc15;
+            font-weight: bold;
+        }
+
+        .bus {
+            position: absolute;
+            background: #64748b;
+        }
+
+        .h {
+            height: 6px;
+        }
+
+        .v {
+            width: 6px;
+        }
+
+        .packet {
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: #22c55e;
+            border-radius: 50%;
+            box-shadow: 0 0 15px #22c55e;
+            transition: 0.8s;
+        }
+
+        .step-title {
+            font-size: 1.8rem;
+            color: #67e8f9;
+            margin-bottom: 20px;
+        }
+
+        .explanation {
+            flex: 1;
+            line-height: 1.8;
+            background: #0f172a;
+            border-radius: 15px;
+            padding: 20px;
+            border-left: 5px solid #38bdf8;
+            overflow: auto;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
             margin-top: 20px;
         }
 
-        .card {
-            background: var(--card);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            border: 1px solid #e2e8f0;
-        }
-
-        .card h3 {
-            margin-top: 0;
-            border-bottom: 2px solid var(--bg);
-            padding-bottom: 10px;
-        }
-
-        input,
         button {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 6px;
-            border: 1px solid #cbd5e1;
-            box-sizing: border-box;
-        }
-
-        button {
-            background-color: var(--primary);
-            color: white;
+            flex: 1;
+            padding: 15px;
             border: none;
+            border-radius: 12px;
+            background: #0ea5e9;
+            color: white;
+            font-size: 1rem;
+            font-weight: bold;
             cursor: pointer;
-            font-weight: 600;
-            transition: background 0.3s;
+            transition: 0.3s;
         }
 
         button:hover {
-            background-color: #1d4ed8;
+            background: #0284c7;
         }
 
-        .result {
-            background: #f1f5f9;
-            padding: 10px;
-            border-radius: 4px;
-            min-height: 20px;
-            font-family: monospace;
-            word-break: break-all;
+        .step-counter {
+            margin-top: 15px;
+            text-align: center;
+            color: #cbd5e1;
         }
 
-        #colorBox {
-            height: 50px;
-            border-radius: 6px;
-            margin-bottom: 10px;
-            border: 2px dashed #cbd5e1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .highlight {
+            color: #facc15;
+            font-weight: bold;
         }
     </style>
 </head>
 
 <body>
 
-    <div class="container">
-        <h1>Laboratorio de Funciones JS</h1>
+    <header>
+        <h1>Funcionamiento Interno de una CPU</h1>
+        <p>Presentación guiada sobre cómo los registros procesan instrucciones</p>
+    </header>
 
-        <div class="grid">
-            <!-- 1. Calculadora de Factorial (Lógica Matemática) -->
-            <div class="card">
-                <h3>Recursión: Factorial</h3>
-                <p>Calcula el factorial de un número (n!).</p>
-                <input type="number" id="factInput" placeholder="Introduce un número">
-                <button onclick="runFactorial()">Calcular</button>
-                <div class="result" id="factResult">Resultado: -</div>
+    <div class="main">
+
+        <div class="cpu-area">
+
+            <div class="component memory" id="memory">
+                <h2>Memoria RAM</h2>
+                <p>LOAD 5</p>
             </div>
 
-            <!-- 2. Manipulación de Color (Eventos y Estilo) -->
-            <div class="card">
-                <h3>DOM: Cambiador de Color</h3>
-                <div id="colorBox">Mírame cambiar</div>
-                <button onclick="changeColor()">Generar Color Aleatorio</button>
-                <div class="result" id="colorCode">Hex: #FFFFFF</div>
+            <div class="component control" id="control">
+                <h2>Unidad de Control</h2>
+                <p>Decodifica instrucciones</p>
             </div>
 
-            <!-- 3. Contador con Intervalo (Temporizadores) -->
-            <div class="card">
-                <h3>Async: Cronómetro simple</h3>
-                <div class="result" id="timerDisplay" style="font-size: 1.5rem; text-align: center;">00:00</div>
-                <div style="display: flex; gap: 10px;">
-                    <button onclick="startTimer()">Iniciar</button>
-                    <button onclick="stopTimer()" style="background: #ef4444;">Detener</button>
-                </div>
+            <div class="component alu" id="alu">
+                <h2>ALU</h2>
+                <p>Realiza operaciones</p>
             </div>
 
-            <!-- 4. Filtro de Arreglos (Procesamiento de Datos) -->
-            <div class="card">
-                <h3>Arrays: Filtro de Palabras</h3>
-                <p>Escribe palabras separadas por comas.</p>
-                <input type="text" id="arrayInput" placeholder="sol, luna, estrella, mar">
-                <button onclick="filterLongWords()">Filtrar (> 5 letras)</button>
-                <div class="result" id="arrayResult">Resultado: []</div>
+            <div class="component registers" id="registers">
+                <h2>Registros CPU</h2>
+
+                <div class="register">PC: <span id="pc">0</span></div>
+                <div class="register">MAR: <span id="mar">0</span></div>
+                <div class="register">MDR: <span id="mdr">---</span></div>
+                <div class="register">IR: <span id="ir">---</span></div>
+                <div class="register">ACC: <span id="acc">0</span></div>
             </div>
+
+            <div class="bus h" style="top:170px; left:220px; width:100px"></div>
+            <div class="bus h" style="top:170px; left:540px; width:120px"></div>
+            <div class="bus v" style="top:220px; left:430px; height:120px"></div>
+
+            <div class="packet" id="packet"></div>
+
         </div>
+
+        <div class="info-area">
+
+            <div class="step-title" id="stepTitle">Paso 1: Inicio</div>
+
+            <div class="explanation" id="explanation">
+                La CPU está lista para comenzar la ejecución del programa. El registro PC indica cuál será la siguiente
+                instrucción a ejecutar.
+            </div>
+
+            <div class="controls">
+                <button onclick="previousStep()">⬅ Anterior</button>
+                <button onclick="nextStep()">Siguiente ➡</button>
+            </div>
+
+            <div class="step-counter" id="counter">
+                Paso 1 de 7
+            </div>
+
+        </div>
+
     </div>
 
     <script>
-        // --- 1. Lógica del Factorial ---
-        function factorial(n) {
-            if (n < 0) return "Error";
-            if (n === 0 || n === 1) return 1;
-            return n * factorial(n - 1);
-        }
 
-        function runFactorial() {
-            const val = document.getElementById('factInput').value;
-            const res = factorial(parseInt(val));
-            document.getElementById('factResult').innerText = `Resultado: ${res}`;
-        }
-
-        // --- 2. Lógica de Colores ---
-        function changeColor() {
-            const letters = '0123456789ABCDEF';
-            let color = '#';
-            for (let i = 0; i < 6; i++) {
-                color += letters[Math.floor(Math.random() * 16)];
+        const steps = [
+            {
+                title: 'Paso 1: Inicio del programa',
+                explanation: 'La CPU se encuentra esperando comenzar la ejecución. El <span class="highlight">PC</span> apunta a la dirección de memoria donde está almacenada la primera instrucción.',
+                active: ['registers'],
+                packet: [760, 80],
+                registers: { pc: '0', mar: '0', mdr: '---', ir: '---', acc: '0' }
+            },
+            {
+                title: 'Paso 2: Fetch de la primera instrucción',
+                explanation: 'La CPU inicia la fase Fetch. El valor del PC se copia al registro <span class="highlight">MAR</span> para indicar qué dirección de memoria será leída.',
+                active: ['memory', 'registers'],
+                packet: [240, 160],
+                registers: { pc: '0', mar: '0', mdr: '---', ir: '---', acc: '0' }
+            },
+            {
+                title: 'Paso 3: Memoria envía la instrucción',
+                explanation: 'La memoria RAM envía la instrucción <span class="highlight">LOAD 8</span> hacia el registro MDR usando el bus de datos.',
+                active: ['memory'],
+                packet: [360, 160],
+                registers: { pc: '0', mar: '0', mdr: 'LOAD 8', ir: '---', acc: '0' }
+            },
+            {
+                title: 'Paso 4: Decode de LOAD',
+                explanation: 'La Unidad de Control copia la instrucción al registro IR y analiza el opcode LOAD.',
+                active: ['control'],
+                packet: [560, 160],
+                registers: { pc: '0', mar: '0', mdr: 'LOAD 8', ir: 'LOAD 8', acc: '0' }
+            },
+            {
+                title: 'Paso 5: Ejecución de LOAD',
+                explanation: 'La instrucción LOAD carga el valor 8 dentro del acumulador ACC.',
+                active: ['alu', 'registers'],
+                packet: [760, 300],
+                registers: { pc: '0', mar: '0', mdr: 'LOAD 8', ir: 'LOAD 8', acc: '8' }
+            },
+            {
+                title: 'Paso 6: Actualización del PC',
+                explanation: 'La CPU termina la primera instrucción y aumenta el PC para buscar la siguiente instrucción.',
+                active: ['registers'],
+                packet: [760, 80],
+                registers: { pc: '1', mar: '0', mdr: 'LOAD 8', ir: 'LOAD 8', acc: '8' }
+            },
+            {
+                title: 'Paso 7: Fetch de ADD 12',
+                explanation: 'La CPU comienza el Fetch de la segunda instrucción usando nuevamente el PC.',
+                active: ['memory', 'registers'],
+                packet: [240, 160],
+                registers: { pc: '1', mar: '1', mdr: 'LOAD 8', ir: 'LOAD 8', acc: '8' }
+            },
+            {
+                title: 'Paso 8: Lectura de ADD 12',
+                explanation: 'La memoria envía la instrucción <span class="highlight">ADD 12</span> hacia el MDR.',
+                active: ['memory'],
+                packet: [360, 160],
+                registers: { pc: '1', mar: '1', mdr: 'ADD 12', ir: 'LOAD 8', acc: '8' }
+            },
+            {
+                title: 'Paso 9: Decode de ADD',
+                explanation: 'La Unidad de Control interpreta la instrucción ADD y prepara la ALU para realizar una suma.',
+                active: ['control'],
+                packet: [560, 160],
+                registers: { pc: '1', mar: '1', mdr: 'ADD 12', ir: 'ADD 12', acc: '8' }
+            },
+            {
+                title: 'Paso 10: Operación aritmética',
+                explanation: 'La ALU suma el valor 12 al contenido actual del acumulador. El ACC contenía 8.',
+                active: ['alu'],
+                packet: [430, 340],
+                registers: { pc: '1', mar: '1', mdr: 'ADD 12', ir: 'ADD 12', acc: '8' }
+            },
+            {
+                title: 'Paso 11: Resultado de ADD',
+                explanation: 'El resultado de la operación es almacenado nuevamente en el acumulador. Ahora el ACC contiene 20.',
+                active: ['alu', 'registers'],
+                packet: [760, 300],
+                registers: { pc: '1', mar: '1', mdr: 'ADD 12', ir: 'ADD 12', acc: '20' }
+            },
+            {
+                title: 'Paso 12: Incremento del PC',
+                explanation: 'La CPU finaliza la segunda instrucción y avanza hacia la siguiente dirección de memoria.',
+                active: ['registers'],
+                packet: [760, 80],
+                registers: { pc: '2', mar: '1', mdr: 'ADD 12', ir: 'ADD 12', acc: '20' }
+            },
+            {
+                title: 'Paso 13: Fetch de SUB 5',
+                explanation: 'La CPU utiliza el PC para localizar la siguiente instrucción en memoria.',
+                active: ['memory'],
+                packet: [240, 160],
+                registers: { pc: '2', mar: '2', mdr: 'ADD 12', ir: 'ADD 12', acc: '20' }
+            },
+            {
+                title: 'Paso 14: Lectura de SUB 5',
+                explanation: 'La memoria RAM transfiere la instrucción SUB 5 hacia el MDR.',
+                active: ['memory'],
+                packet: [360, 160],
+                registers: { pc: '2', mar: '2', mdr: 'SUB 5', ir: 'ADD 12', acc: '20' }
+            },
+            {
+                title: 'Paso 15: Decode de SUB',
+                explanation: 'La Unidad de Control detecta una operación de resta y configura la ALU.',
+                active: ['control'],
+                packet: [560, 160],
+                registers: { pc: '2', mar: '2', mdr: 'SUB 5', ir: 'SUB 5', acc: '20' }
+            },
+            {
+                title: 'Paso 16: Ejecución de la resta',
+                explanation: 'La ALU toma el valor del ACC y le resta 5.',
+                active: ['alu'],
+                packet: [430, 340],
+                registers: { pc: '2', mar: '2', mdr: 'SUB 5', ir: 'SUB 5', acc: '20' }
+            },
+            {
+                title: 'Paso 17: Resultado de SUB',
+                explanation: 'El resultado final de la resta se almacena en el acumulador. El ACC ahora contiene 15.',
+                active: ['alu', 'registers'],
+                packet: [760, 300],
+                registers: { pc: '2', mar: '2', mdr: 'SUB 5', ir: 'SUB 5', acc: '15' }
+            },
+            {
+                title: 'Paso 18: Fetch de STORE 40',
+                explanation: 'La CPU comienza la búsqueda de la última instrucción del programa.',
+                active: ['memory'],
+                packet: [240, 160],
+                registers: { pc: '3', mar: '3', mdr: 'SUB 5', ir: 'SUB 5', acc: '15' }
+            },
+            {
+                title: 'Paso 19: Decode de STORE',
+                explanation: 'La Unidad de Control interpreta que el contenido del ACC deberá enviarse a memoria.',
+                active: ['control'],
+                packet: [560, 160],
+                registers: { pc: '3', mar: '3', mdr: 'STORE 40', ir: 'STORE 40', acc: '15' }
+            },
+            {
+                title: 'Paso 20: Escritura en memoria',
+                explanation: 'El valor almacenado en el acumulador viaja por el bus de datos y se guarda en la dirección de memoria 40.',
+                active: ['memory', 'alu', 'registers'],
+                packet: [240, 160],
+                registers: { pc: '3', mar: '40', mdr: '15', ir: 'STORE 40', acc: '15' }
+            },
+            {
+                title: 'Paso 21: Programa finalizado',
+                explanation: 'La CPU terminó todas las instrucciones del programa. El resultado final almacenado fue 15.',
+                active: ['registers'],
+                packet: [760, 80],
+                registers: { pc: '4', mar: '40', mdr: '15', ir: 'STORE 40', acc: '15' }
             }
-            const box = document.getElementById('colorBox');
-            box.style.backgroundColor = color;
-            box.style.color = 'white';
-            document.getElementById('colorCode').innerText = `Hex: ${color}`;
+        ];
+
+        let current = 0;
+
+        function renderStep() {
+
+            const step = steps[current];
+
+            document.getElementById('stepTitle').innerHTML = step.title;
+            document.getElementById('explanation').innerHTML = step.explanation;
+            document.getElementById('counter').innerHTML = `Paso ${current + 1} de ${steps.length}`;
+
+            document.querySelectorAll('.component').forEach(c => {
+                c.classList.remove('active');
+            });
+
+            step.active.forEach(id => {
+                document.getElementById(id).classList.add('active');
+            });
+
+            document.getElementById('pc').innerHTML = step.registers.pc;
+            document.getElementById('mar').innerHTML = step.registers.mar;
+            document.getElementById('mdr').innerHTML = step.registers.mdr;
+            document.getElementById('ir').innerHTML = step.registers.ir;
+            document.getElementById('acc').innerHTML = step.registers.acc;
+
+            document.getElementById('packet').style.left = step.packet[0] + 'px';
+            document.getElementById('packet').style.top = step.packet[1] + 'px';
         }
 
-        // --- 3. Lógica del Cronómetro ---
-        let timerInterval;
-        let seconds = 0;
-
-        function startTimer() {
-            if (timerInterval) return; // Evitar múltiples intervalos
-            timerInterval = setInterval(() => {
-                seconds++;
-                const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
-                const secs = (seconds % 60).toString().padStart(2, '0');
-                document.getElementById('timerDisplay').innerText = `${mins}:${secs}`;
-            }, 1000);
+        function nextStep() {
+            if (current < steps.length - 1) {
+                current++;
+                renderStep();
+            }
         }
 
-        function stopTimer() {
-            clearInterval(timerInterval);
-            timerInterval = null;
+        function previousStep() {
+            if (current > 0) {
+                current--;
+                renderStep();
+            }
         }
 
-        // --- 4. Lógica de Arreglos ---
-        function filterLongWords() {
-            const input = document.getElementById('arrayInput').value;
-            // Convertir string en array, limpiar espacios y filtrar
-            const words = input.split(',').map(w => w.trim());
-            const filtered = words.filter(word => word.length > 5);
 
-            document.getElementById('arrayResult').innerText =
-                filtered.length > 0 ? `Filtradas: [${filtered.join(', ')}]` : "No hay palabras largas.";
+        function previousStep() {
+            if (current > 0) {
+                current--;
+                renderStep();
+            }
         }
+
+        renderStep();
+
     </script>
 
 </body>
