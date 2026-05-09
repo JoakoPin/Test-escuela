@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>CPU Architecture Sim v2.7 - Custom Azure</title>
+    <style>
+        :root {
+            --bg-main: #d1d5db;
+            --bg-stage: #e5e7eb;
+            --panel-side: #a2bff8ae;
+            /* El color exacto que solicitaste */
+            --azure-dark: #0060ac;
+            --azure-bright: #4285f4;
+            --orange-action: #ff7d3d;
+            --text-dark: #1f2937;
+            --wire-color: #9ca3af;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-dark);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- Panel de Control Lateral --- */
+        .control-panel {
+            width: 360px;
+            background: var(--panel-side);
+            border-right: 2px solid #8e9aaf;
+            display: flex;
+            flex-direction: column;
+            padding: 25px;
+            box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            backdrop-filter: blur(5px);
+            /* Suaviza el fondo tras el panel */
+        }
+
+        .code-editor {
+            flex-grow: 1;
+            background: #ffffff;
+            border: 2px solid #d1d5db;
+            color: var(--azure-dark);
+            font-family: 'Consolas', monospace;
+            padding: 15px;
+            border-radius: 8px;
+            resize: none;
+            font-size: 14px;
+            outline: none;
+            margin-bottom: 15px;
+        }
+
+        /* --- Escenario Principal --- */
+        .main-stage {
+            flex-grow: 1;
+            position: relative;
+            background-color: var(--bg-stage);
+            background-image: radial-gradient(#bdc3c7 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        .component {
+            position: absolute;
+            background: #f9fafb;
+            border: 2px solid var(--azure-dark);
+            border-radius: 10px;
+            padding: 15px;
+            width: 210px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: 0.3s;
+        }
+
+        .component.active {
+            border-color: var(--orange-action);
+            background: #ffffff;
+            transform: scale(1.02);
+            box-shadow: 0 0 15px rgba(255, 125, 61, 0.2);
+        }
+
+        .reg-label {
+            color: var(--azure-dark);
+            font-weight: 800;
+            font-size: 11px;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .reg-val {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            font-family: monospace;
+        }
+
+        .alu-component {
+            position: absolute;
+            width: 180px;
+            height: 220px;
+            background: #f3f4f6;
+            border: 3px solid var(--orange-action);
+            clip-path: polygon(0% 0%, 40% 0%, 50% 20%, 60% 0%, 100% 0%, 85% 100%, 15% 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* --- Botones --- */
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .main-btn {
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .btn-step {
+            background: var(--orange-action);
+            color: white;
+        }
+
+        .btn-run {
+            background: #374151;
+            color: white;
+        }
+
+        .btn-exercises {
+            background: var(--azure-dark);
+            color: white;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .btn-exercises:hover {
+            background: var(--azure-bright);
+        }
+
+        #monitor {
+            margin-top: 15px;
+            height: 140px;
+            background: #1f2937;
+            color: #f9fafb;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 11px;
+            font-family: monospace;
+            overflow-y: auto;
+        }
+
+        /* --- SVG Buses --- */
+        #bus-system {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        .wire {
+            fill: none;
+            stroke: var(--wire-color);
+            stroke-width: 3;
+        }
+
+        .wire-active {
+            stroke: var(--azure-bright);
+            stroke-dasharray: 10;
+            animation: flow 0.5s linear infinite;
+        }
+
+        @keyframes flow {
+            to {
+                stroke-dashoffset: -20;
+            }
+        }
+
+        .step-pill {
+            padding: 5px 12px;
+            font-size: 10px;
+            font-weight: bold;
+            border-radius: 20px;
+            background: #d1d5db;
+            color: #4b5563;
+            margin: 0 2px;
+        }
+
+        .step-pill.active {
+            background: var(--azure-dark);
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="control-panel">
+        <h2 style="color: var(--azure-dark); margin: 0 0 15px 0;">SISTEMA CPU</h2>
+
+        <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+            <div id="step-fetch" class="step-pill">FETCH</div>
+            <div id="step-decode" class="step-pill">DECODE</div>
+            <div id="step-execute" class="step-pill">EXECUTE</div>
+        </div>
+
+        <textarea id="editor" class="code-editor">MOV AX, 10
+MOV BX, 20
+ADD AX, BX
+MOV CX, AX</textarea>
+
+        <div class="btn-group">
+            <button class="main-btn btn-step" onclick="executeStep()">SIGUIENTE</button>
+            <button class="main-btn btn-run" onclick="runProgram()">AUTO</button>
+        </div>
+
+        <button class="main-btn btn-exercises" onclick="toggleModal(true)">EJERCICIOS PROPUESTOS</button>
+        <button class="main-btn" style="margin-top: 10px; background: #9ca3af; color: white;"
+            onclick="resetCPU()">RESET</button>
+
+        <div id="monitor"></div>
+    </div>
+
+    <div class="main-stage">
+        <svg id="bus-system">
+            <path id="w-ax-alu" class="wire" d="M 280 115 L 510 115 L 510 180" />
+            <path id="w-bx-alu" class="wire" d="M 280 315 L 420 315" />
+            <path id="w-alu-out" class="wire" d="M 510 400 L 510 560 L 40 560 L 40 115 L 70 115" />
+        </svg>
+
+        <div class="component" style="top: 80px; left: 70px;" id="reg-AX">
+            <span class="reg-label">AX - ACUMULADOR</span>
+            <span class="reg-val" id="val-AX">0000</span>
+        </div>
+
+        <div class="component" style="top: 280px; left: 70px;" id="reg-BX">
+            <span class="reg-label">BX - BASE</span>
+            <span class="reg-val" id="val-BX">0000</span>
+        </div>
+
+        <div class="component" style="top: 480px; left: 70px;" id="reg-CX">
+            <span class="reg-label">CX - CONTADOR</span>
+            <span class="reg-val" id="val-CX">0000</span>
+        </div>
+
+        <div class="alu-component" style="top: 180px; left: 420px;" id="alu">
+            <div style="text-align: center; margin-top: 40px;">
+                <span class="reg-label" style="color: var(--orange-action);">ALU</span>
+                <span id="alu-op" style="font-weight: 900; font-size: 3.5rem;">---</span>
+            </div>
+        </div>
+
+        <div class="component" style="top: 80px; right: 40px; width: 150px; border-color: #6b7280;" id="reg-PC">
+            <span class="reg-label" style="color: #4b5563;">PC</span>
+            <span class="reg-val" id="val-PC" style="font-size: 1.8rem;">0</span>
+        </div>
+        <div class="component" style="top: 210px; right: 40px; width: 150px; border-color: #6b7280;" id="reg-IR">
+            <span class="reg-label" style="color: #4b5563;">IR</span>
+            <span class="reg-val" style="font-size: 13px;" id="val-IR">IDLE</span>
+        </div>
+    </div>
+
+    <div class="modal" id="modal"
+        style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #f9fafb; padding: 30px; border-radius: 12px; border: 3px solid var(--azure-dark); display: none; z-index: 1000; width: 400px; box-shadow: 0 0 50px rgba(0,0,0,0.3);">
+        <h3 style="margin-top: 0; color: var(--azure-dark);">Ejercicios de Arquitectura</h3>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button class="main-btn btn-run" style="text-align: left;"
+                onclick="loadEx('MOV AX, 15\nMOV BX, 35\nADD AX, BX')">1. Suma Básica (AX + BX)</button>
+            <button class="main-btn btn-run" style="text-align: left;"
+                onclick="loadEx('MOV AX, 100\nSUB AX, 40\nMOV CX, AX')">2. Resta y Transferencia a CX</button>
+            <button class="main-btn btn-run" style="text-align: left;"
+                onclick="loadEx('MOV AX, 5\nADD AX, 5\nADD AX, 5\nMOV BX, AX')">3. Suma Acumulativa</button>
+            <button class="main-btn btn-run" style="text-align: left;"
+                onclick="loadEx('MOV AX, 50\nMOV BX, 50\nADD AX, BX\nMOV CX, AX\nSUB AX, CX')">4. Desafío: Limpiar AX
+                usando CX</button>
+        </div>
+        <button class="main-btn btn-step" style="margin-top: 20px; width: 100%;"
+            onclick="toggleModal(false)">CERRAR</button>
+    </div>
+
+    <script>
+        let cpu = { AX: 0, BX: 0, CX: 0, PC: 0, IR: "IDLE" };
+        let isRunning = false;
+
+        function log(msg) {
+            const m = document.getElementById('monitor');
+            m.innerHTML = `<span style="color:var(--azure-bright)">[T:${cpu.PC}]</span> ${msg}<br>` + m.innerHTML;
+        }
+
+        function toggleModal(show) { document.getElementById('modal').style.display = show ? 'block' : 'none'; }
+
+        function resetCPU() {
+            cpu = { AX: 0, BX: 0, CX: 0, PC: 0, IR: "IDLE" };
+            document.getElementById('monitor').innerHTML = "";
+            document.getElementById('alu-op').innerText = "---";
+            document.querySelectorAll('.step-pill').forEach(s => s.classList.remove('active'));
+            updateUI();
+            log("SISTEMA RESETEADO.");
+        }
+
+        function updateUI(activeReg = null) {
+            document.getElementById('val-AX').innerText = cpu.AX.toString().padStart(4, '0');
+            document.getElementById('val-BX').innerText = cpu.BX.toString().padStart(4, '0');
+            document.getElementById('val-CX').innerText = cpu.CX.toString().padStart(4, '0');
+            document.getElementById('val-PC').innerText = cpu.PC;
+            document.getElementById('val-IR').innerText = cpu.IR;
+            document.querySelectorAll('.component').forEach(c => c.classList.remove('active'));
+            if (activeReg) document.getElementById(`reg-${activeReg}`)?.classList.add('active');
+        }
+
+        async function executeStep() {
+            const lines = document.getElementById('editor').value.split('\n').filter(l => l.trim() !== "");
+            if (cpu.PC >= lines.length) { isRunning = false; return; }
+
+            document.querySelectorAll('.step-pill').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.wire').forEach(w => w.classList.remove('wire-active'));
+
+            document.getElementById('step-fetch').classList.add('active');
+            cpu.IR = lines[cpu.PC].trim();
+            updateUI('IR');
+            await new Promise(r => setTimeout(r, 400));
+
+            document.getElementById('step-decode').classList.add('active');
+            const parts = cpu.IR.replace(',', '').split(/\s+/);
+            const op = parts[0].toUpperCase();
+            const dest = parts[1]?.toUpperCase();
+            const src = parts[2]?.toUpperCase();
+            await new Promise(r => setTimeout(r, 400));
+
+            document.getElementById('step-execute').classList.add('active');
+            const getVal = (v) => cpu.hasOwnProperty(v) ? cpu[v] : parseInt(v) || 0;
+
+            if (op === "MOV") {
+                cpu[dest] = getVal(src);
+                document.getElementById('w-alu-out').classList.add('wire-active');
+                log(`MOV: ${getVal(src)} -> ${dest}`);
+            } else if (op === "ADD") {
+                document.getElementById('alu-op').innerText = "+";
+                document.getElementById('w-ax-alu').classList.add('wire-active');
+                document.getElementById('w-bx-alu').classList.add('wire-active');
+                cpu[dest] += getVal(src);
+                log(`ADD: Operación en ALU`);
+            } else if (op === "SUB") {
+                document.getElementById('alu-op').innerText = "-";
+                cpu[dest] -= getVal(src);
+                log(`SUB: Operación en ALU`);
+            }
+
+            setTimeout(() => { document.getElementById('alu-op').innerText = "---"; }, 800);
+            cpu.PC++;
+            updateUI(dest);
+        }
+
+        function runProgram() {
+            if (isRunning) return;
+            isRunning = true;
+            const interval = setInterval(async () => {
+                if (!isRunning) { clearInterval(interval); return; }
+                await executeStep();
+                const lines = document.getElementById('editor').value.split('\n').filter(l => l.trim() !== "");
+                if (cpu.PC >= lines.length) { clearInterval(interval); isRunning = false; }
+            }, 1500);
+        }
+
+        function loadEx(code) {
+            document.getElementById('editor').value = code;
+            resetCPU();
+            toggleModal(false);
+        }
+
+        updateUI();
+    </script>
+</body>
+
+</html>
